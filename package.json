@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "next": "16.4.2",
+    "next-auth": "^5.0.0-beta.32",
     "openai": "^7.38.0",
     "pg": "^8.23.1",
     "react": "19.3.0",

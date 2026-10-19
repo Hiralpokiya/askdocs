@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState,useEffect } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 type Source = { n: number; document: string; page: number; score: string; preview: string };
 type Message = { role: "user" | "assistant"; content: string; sources?: Source[] };
 type Doc = { id: number; name: string; pages: number; chunks: number };
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -15,6 +17,13 @@ export default function Home() {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/documents")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setDocs);
+  }, [status]);
+  
 
   async function upload(file: File) {
     setError("");
@@ -59,14 +68,39 @@ export default function Home() {
       setAsking(false);
     }
   }
+  if (status === "loading") {
+  return <main className="p-10 text-center text-slate-500">Loading...</main>;
+}
+
+if (!session) {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+      <h1 className="text-3xl font-semibold">AskDocs</h1>
+      <p className="text-slate-500">Upload PDFs and ask questions with cited answers.</p>
+      <button
+        onClick={() => signIn("github")}
+        className="rounded-lg bg-slate-900 px-5 py-2 text-white"
+      >
+        Sign in with GitHub
+      </button>
+    </main>
+  );
+}
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="text-xl font-semibold">AskDocs</h1>
-        <p className="text-sm text-slate-500">Upload a PDF and ask questions. Answers cite their sources.</p>
-      </header>
-
+      <header className="flex items-center justify-between border-b bg-white px-6 py-4">
+  <div>
+    <h1 className="text-xl font-semibold">AskDocs</h1>
+    <p className="text-sm text-slate-500">Upload a PDF and ask questions. Answers cite their sources.</p>
+  </div>
+  <div className="flex items-center gap-3 text-sm">
+    <span className="text-slate-600">{session.user?.name}</span>
+    <button onClick={() => signOut()} className="rounded-lg border px-3 py-1 hover:bg-slate-100">
+      Sign out
+    </button>
+  </div>
+</header>
       <div className="mx-auto grid max-w-6xl gap-6 p-6 md:grid-cols-[280px_1fr]">
         {/* Sidebar: upload + documents */}
         <aside className="space-y-4">

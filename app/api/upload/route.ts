@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
+import { auth } from "@/auth";
 import { pool } from "@/lib/db";
 import { openai } from "@/lib/openai";
 import { chunkText } from "@/lib/chunk";
 
 
 export async function POST(req: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return NextResponse.json({ error: "Please sign in" }, { status: 401 });
   const form = await req.formData();
   const file = form.get("file");
 
@@ -44,7 +48,7 @@ export async function POST(req: Request) {
     await client.query("BEGIN");
     const { rows } = await client.query(
       "INSERT INTO documents (user_id, name) VALUES ($1, $2) RETURNING id",
-      ["demo-user", file.name] // replaced with the real user in the auth step
+      [userId, file.name] // replaced with the real user in the auth step
     );
     const docId = rows[0].id;
 
