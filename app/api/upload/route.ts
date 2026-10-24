@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import { auth } from "@/auth";
 import { pool } from "@/lib/db";
-import { openai } from "@/lib/openai";
+import { getOpenAI } from "@/lib/openai";
 import { chunkText } from "@/lib/chunk";
 
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   // 3. Embed in batches of 100 (before opening a DB transaction)
   const embeddings: number[][] = [];
   for (let i = 0; i < pieces.length; i += 100) {
-    const res = await openai.embeddings.create({
+    const res = await getOpenAI().embeddings.create({
       model: "text-embedding-3-small",
       input: pieces.slice(i, i + 100).map((p) => p.content),
     });

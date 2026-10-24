@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { pool } from "@/lib/db";
-import { openai } from "@/lib/openai";
+import { getOpenAI } from "@/lib/openai";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please ask a question" }, { status: 400 });
   }
 
-  const emb = await openai.embeddings.create({
+  const emb = await getOpenAI().embeddings.create({
     model: "text-embedding-3-small",
     input: question,
   });
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     .map((r, i) => `[${i + 1}] (${r.name}, page ${r.page})\n${r.content}`)
     .join("\n\n");
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini",
     temperature: 0,
     messages: [
