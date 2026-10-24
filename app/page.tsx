@@ -106,7 +106,7 @@ if (!session) {
         <aside className="space-y-4">
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-blue-500">
             <span className="text-sm font-medium">{uploading ? "Processing PDF..." : "Upload a PDF"}</span>
-            <span className="mt-1 text-xs text-slate-500">Max 10 MB</span>
+            <span className="mt-1 text-xs text-slate-500">Max 4 MB</span>
             <input
               ref={fileRef}
               type="file"

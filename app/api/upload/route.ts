@@ -16,8 +16,8 @@ export async function POST(req: Request) {
   if (!(file instanceof File) || file.type !== "application/pdf") {
     return NextResponse.json({ error: "Please upload a PDF" }, { status: 400 });
   }
-  if (file.size > 10 * 1024 * 1024) {
-    return NextResponse.json({ error: "Max file size is 10 MB" }, { status: 400 });
+  if (file.size > 4 * 1024 * 1024) {
+    return NextResponse.json({ error: "Max file size is 4 MB" }, { status: 400 });
   }
 
   // 1. Extract text page by page
