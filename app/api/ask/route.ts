@@ -13,12 +13,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please ask a question" }, { status: 400 });
   }
 
+  // 1. Embed the question
   const emb = await getOpenAI().embeddings.create({
     model: "text-embedding-3-small",
     input: question,
   });
   const vector = JSON.stringify(emb.data[0].embedding);
 
+  // 2. Find the 5 closest chunks for this user
   const { rows } = await pool.query(
     `SELECT c.content, c.page, d.name,
             1 - (c.embedding <=> $1::vector) AS score
@@ -31,17 +33,31 @@ export async function POST(req: Request) {
     [vector, userId, documentId ?? null]
   );
 
+  const sources = rows.map((r, i) => ({
+    n: i + 1,
+    document: r.name,
+    page: r.page,
+    score: Number(r.score).toFixed(2),
+    preview: r.content.slice(0, 150),
+  }));
+
+  const encoder = new TextEncoder();
+  const headers = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" };
+
+  // No documents: same format, no model call
   if (rows.length === 0) {
-    return NextResponse.json({ answer: "No documents uploaded yet.", sources: [] });
+    return new Response(JSON.stringify([]) + "\nNo documents uploaded yet.", { headers });
   }
 
   const context = rows
     .map((r, i) => `[${i + 1}] (${r.name}, page ${r.page})\n${r.content}`)
     .join("\n\n");
 
+  // 3. Ask the model with stream: true
   const completion = await getOpenAI().chat.completions.create({
     model: process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini",
     temperature: 0,
+    stream: true,
     messages: [
       {
         role: "system",
@@ -54,14 +70,22 @@ export async function POST(req: Request) {
     ],
   });
 
-  return NextResponse.json({
-    answer: completion.choices[0].message.content,
-    sources: rows.map((r, i) => ({
-      n: i + 1,
-      document: r.name,
-      page: r.page,
-      score: Number(r.score).toFixed(2),
-      preview: r.content.slice(0, 150),
-    })),
+  // 4. Stream: first line = sources JSON, then the answer text as it arrives
+  const body = new ReadableStream({
+    async start(controller) {
+      controller.enqueue(encoder.encode(JSON.stringify(sources) + "\n"));
+      try {
+        for await (const chunk of completion) {
+          const text = chunk.choices[0]?.delta?.content;
+          if (text) controller.enqueue(encoder.encode(text));
+        }
+      } catch (err) {
+        console.error(err);
+        controller.enqueue(encoder.encode("\n\n[The answer was cut off. Please try again.]"));
+      }
+      controller.close();
+    },
   });
+
+  return new Response(body, { headers });
 }

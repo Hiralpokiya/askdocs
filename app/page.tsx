@@ -46,6 +46,15 @@ export default function Home() {
     }
   }
 
+  // Update the last message (the assistant reply being streamed)
+  function updateLast(fn: (m: Message) => Message) {
+    setMessages((all) => {
+      const copy = [...all];
+      copy[copy.length - 1] = fn(copy[copy.length - 1]);
+      return copy;
+    });
+  }
+
   async function ask(e: React.FormEvent) {
     e.preventDefault();
     const question = input.trim();
@@ -60,9 +69,38 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, documentId: selected }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
-      setMessages((m) => [...m, { role: "assistant", content: data.answer, sources: data.sources }]);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      // Empty assistant bubble that fills in as text arrives
+      setMessages((m) => [...m, { role: "assistant", content: "", sources: [] }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let gotSources = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // First line is the sources JSON
+        if (!gotSources) {
+          const newline = buffer.indexOf("\n");
+          if (newline === -1) continue;
+          const sources: Source[] = JSON.parse(buffer.slice(0, newline));
+          buffer = buffer.slice(newline + 1);
+          gotSources = true;
+          updateLast((m) => ({ ...m, sources }));
+        }
+
+        // Everything after it is the answer so far
+        const answer = buffer;
+        updateLast((m) => ({ ...m, content: answer }));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -165,6 +203,8 @@ export default function Home() {
     );
   }
 
+  const lastIsUser = messages[messages.length - 1]?.role === "user";
+
   // ---------- Signed in: app ----------
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -227,7 +267,7 @@ export default function Home() {
           </div>
         </aside>
 
-        <section className="flex h-[75vh] flex-col rounded-xl bg-white">
+        <section className="flex h-[75vh] min-w-0 flex-col rounded-xl bg-white">
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             {messages.length === 0 && (
               <p className="mt-20 text-center text-sm text-slate-400">
@@ -242,7 +282,12 @@ export default function Home() {
                     m.role === "user" ? "bg-blue-600 text-white" : "bg-slate-100"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  <p className="whitespace-pre-wrap">
+                    {m.content}
+                    {asking && i === messages.length - 1 && m.role === "assistant" && (
+                      <span className="ml-0.5 inline-block animate-pulse">▍</span>
+                    )}
+                  </p>
                   {m.sources && m.sources.length > 0 && (
                     <details className="mt-3">
                       <summary className="cursor-pointer text-xs font-medium text-slate-600">
@@ -264,7 +309,7 @@ export default function Home() {
               </div>
             ))}
 
-            {asking && <p className="text-sm text-slate-400">Thinking...</p>}
+            {asking && lastIsUser && <p className="text-sm text-slate-400">Searching your documents...</p>}
           </div>
 
           {error && <p className="border-t bg-red-50 px-5 py-2 text-sm text-red-600">{error}</p>}
