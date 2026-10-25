@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import { auth } from "@/auth";
+import { consume, limitMessage } from "@/lib/limits";
 import { pool } from "@/lib/db";
 import { getOpenAI } from "@/lib/openai";
 import { chunkText } from "@/lib/chunk";
@@ -18,6 +19,11 @@ export async function POST(req: Request) {
   }
   if (file.size > 4 * 1024 * 1024) {
     return NextResponse.json({ error: "Max file size is 4 MB" }, { status: 400 });
+  }
+
+  const quota = await consume(userId, "upload");
+  if (!quota.ok) {
+    return NextResponse.json({ error: limitMessage("upload", quota.limit) }, { status: 429 });
   }
 
   // 1. Extract text page by page

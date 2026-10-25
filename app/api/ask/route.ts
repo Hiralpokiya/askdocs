@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { consume, limitMessage } from "@/lib/limits";
 import { getOpenAI } from "@/lib/openai";
 import { retrieve, buildUserMessage, SYSTEM_PROMPT, chatModel } from "@/lib/rag";
 
@@ -11,6 +12,11 @@ export async function POST(req: Request) {
   const { question, documentId } = await req.json();
   if (typeof question !== "string" || !question.trim()) {
     return NextResponse.json({ error: "Please ask a question" }, { status: 400 });
+  }
+
+  const quota = await consume(userId, "ask");
+  if (!quota.ok) {
+    return NextResponse.json({ error: limitMessage("ask", quota.limit) }, { status: 429 });
   }
 
   const chunks = await retrieve(question, userId, documentId ?? null);
