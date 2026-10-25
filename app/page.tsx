@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
+import SignInLoader from "./sign-in-loader";
 import UserMenu from "./user-menu";
 import Image from "next/image";
 
@@ -18,6 +19,13 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
+
+  useEffect(() => {
+    const reset = (e: PageTransitionEvent) => { if (e.persisted) setSigningIn(false); };
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Load this user's saved documents after sign-in
@@ -112,13 +120,14 @@ export default function Home() {
 
   // ---------- Loading ----------
   if (status === "loading") {
-    return <main className="p-10 text-center text-slate-500">Loading...</main>;
+    return <SignInLoader label="Loading AskDocs" />;
   }
 
   // ---------- Signed out: landing page ----------
   if (!session) {
     return (
       <main className="min-h-screen bg-slate-50 text-slate-900">
+        {signingIn && <SignInLoader />}
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
           <div>
             <div className="mb-6 flex items-center gap-2"><Image src="/logo.svg" alt="" width={36} height={36} /><span className="text-xl font-semibold">AskDocs</span></div>
@@ -142,7 +151,8 @@ export default function Home() {
             </ul>
 
             <button
-              onClick={() => signIn("github")}
+              onClick={() => { setSigningIn(true); signIn("github"); }}
+              disabled={signingIn}
               className="mt-8 rounded-lg bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-slate-700"
             >
               Sign in with GitHub to try it

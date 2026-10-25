@@ -35,3 +35,26 @@ body {
     cursor: not-allowed;
   }
 }
+
+/* Sign-in loader animations */
+@keyframes ad-scan {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(16px, 6px); }
+  50% { transform: translate(2px, 18px); }
+  75% { transform: translate(18px, 26px); }
+}
+@keyframes ad-line {
+  0%, 100% { fill: #e2e8f0; }
+  50% { fill: #93c5fd; }
+}
+@keyframes ad-dot {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+.ad-scan { animation: ad-scan 2.4s ease-in-out infinite; }
+.ad-line { fill: #e2e8f0; animation: ad-line 1.2s ease-in-out infinite; }
+.ad-dot { animation: ad-dot 1.2s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-scan, .ad-line, .ad-dot { animation: none; }
+}
