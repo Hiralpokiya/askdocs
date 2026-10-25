@@ -1,0 +1,23 @@
+[
+  { "question": "Where did Hiral earn her master's degree?", "expected": ["Fullerton"] },
+  { "question": "What was Hiral's GPA in her M.S. program?", "expected": ["3.71"] },
+  { "question": "Where did Hiral complete her bachelor's degree?", "expected": ["Gujarat"] },
+  { "question": "What was Hiral's job title at Nexowa?", "expected": ["Intern"] },
+  { "question": "When did Hiral work at Nexowa?", "expected": ["2023", "2024"] },
+  { "question": "How much did Hiral reduce reporting turnaround at Nexowa?", "expected": ["5", "2"] },
+  { "question": "How did Hiral improve the dashboard API response time at Pixerfect?", "expected": ["2.5", "1.7"] },
+  { "question": "How many client-facing web applications did Hiral ship at Pixerfect?", "expected": ["3"] },
+  { "question": "What did the cross-browser regression checklist achieve?", "expected": ["10", "6"] },
+  { "question": "What is GreenLab?", "expected": ["fitness"] },
+  { "question": "Which company did Hiral intern at in early 2023?", "expected": ["Verdict"] },
+  { "question": "What database does the Mini Data Warehouse use?", "expected": ["PostgreSQL"] },
+  { "question": "What layers does the Mini Data Warehouse have?", "expected": ["Bronze", "Silver", "Gold"] },
+  { "question": "What bug did Hiral catch in the Mini Data Warehouse?", "expected": ["ROW_NUMBER"] },
+  { "question": "Which city is Hiral based in?", "expected": ["Fullerton"] },
+
+  { "question": "What is Hiral's current salary?", "answerable": false },
+  { "question": "What is Hiral's date of birth?", "answerable": false },
+  { "question": "What is Hiral's home address?", "answerable": false },
+  { "question": "How many years did Hiral work at Google?", "answerable": false },
+  { "question": "Which programming language does Hiral dislike?", "answerable": false }
+]
