@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState,useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 
 type Source = { n: number; document: string; page: number; score: string; preview: string };
@@ -17,13 +17,14 @@ export default function Home() {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-    useEffect(() => {
+
+  // Load this user's saved documents after sign-in
+  useEffect(() => {
     if (status !== "authenticated") return;
     fetch("/api/documents")
       .then((r) => (r.ok ? r.json() : []))
       .then(setDocs);
   }, [status]);
-  
 
   async function upload(file: File) {
     setError("");
@@ -68,44 +69,126 @@ export default function Home() {
       setAsking(false);
     }
   }
+
+  // ---------- Loading ----------
   if (status === "loading") {
-  return <main className="p-10 text-center text-slate-500">Loading...</main>;
-}
+    return <main className="p-10 text-center text-slate-500">Loading...</main>;
+  }
 
-if (!session) {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
-      <h1 className="text-3xl font-semibold">AskDocs</h1>
-      <p className="text-slate-500">Upload PDFs and ask questions with cited answers.</p>
-      <button
-        onClick={() => signIn("github")}
-        className="rounded-lg bg-slate-900 px-5 py-2 text-white"
-      >
-        Sign in with GitHub
-      </button>
-    </main>
-  );
-}
+  // ---------- Signed out: landing page ----------
+  if (!session) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
+          <div>
+            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+              RAG · Next.js · pgvector
+            </span>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-5xl">
+              Ask your PDFs.
+              <br />
+              Get answers with sources.
+            </h1>
+            <p className="mt-4 text-lg text-slate-600">
+              Upload a document and ask questions in plain English. Every answer cites the page it
+              came from, so you can check it yourself.
+            </p>
 
+            <ul className="mt-6 space-y-2 text-sm text-slate-700">
+              <li>✓ Page-level citations on every answer</li>
+              <li>✓ Says “not found” instead of guessing</li>
+              <li>✓ Your documents stay private to your account</li>
+            </ul>
+
+            <button
+              onClick={() => signIn("github")}
+              className="mt-8 rounded-lg bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-slate-700"
+            >
+              Sign in with GitHub to try it
+            </button>
+            <p className="mt-3 text-xs text-slate-500">
+              We only read your public GitHub profile. Max file size 4 MB.
+            </p>
+          </div>
+
+          <div className="min-w-0 rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-2 w-2 rounded-full bg-green-500" />
+              employee_handbook.pdf · 12 pages
+            </div>
+            <div className="flex justify-end">
+              <div className="rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white">
+                How many vacation days do new hires get?
+              </div>
+            </div>
+            <div className="mt-3 rounded-2xl bg-slate-100 px-4 py-3 text-sm leading-relaxed">
+              New hires get 15 vacation days per year, rising to 20 after three years [1]. Unused
+              days can roll over up to a maximum of 5 [2].
+              <div className="mt-3 space-y-1 text-xs text-slate-500">
+                <div>[1] employee_handbook.pdf · page 7</div>
+                <div>[2] employee_handbook.pdf · page 8</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t bg-white">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 py-10 text-sm md:grid-cols-3">
+            <div>
+              <p className="font-semibold">1. Upload</p>
+              <p className="mt-1 text-slate-600">
+                Your PDF is split into chunks and stored as embeddings in PostgreSQL.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">2. Ask</p>
+              <p className="mt-1 text-slate-600">
+                Your question is matched to the most relevant chunks with vector search.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">3. Get a cited answer</p>
+              <p className="mt-1 text-slate-600">
+                The model answers only from those chunks and shows where each fact came from.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <footer className="py-6 text-center text-xs text-slate-500">
+          Built by Hiral Pokiya ·{" "}
+          <a href="https://github.com/Hiralpokiya/askdocs" className="underline hover:text-slate-700">
+            Source on GitHub
+          </a>
+        </footer>
+      </main>
+    );
+  }
+
+  // ---------- Signed in: app ----------
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center justify-between border-b bg-white px-6 py-4">
-  <div>
-    <h1 className="text-xl font-semibold">AskDocs</h1>
-    <p className="text-sm text-slate-500">Upload a PDF and ask questions. Answers cite their sources.</p>
-  </div>
-  <div className="flex items-center gap-3 text-sm">
-    <span className="text-slate-600">{session.user?.name}</span>
-    <button onClick={() => signOut()} className="rounded-lg border px-3 py-1 hover:bg-slate-100">
-      Sign out
-    </button>
-  </div>
-</header>
+        <div>
+          <h1 className="text-xl font-semibold">AskDocs</h1>
+          <p className="text-sm text-slate-500">
+            Upload a PDF and ask questions. Answers cite their sources.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-slate-600">{session.user?.name}</span>
+          <button onClick={() => signOut()} className="rounded-lg border px-3 py-1 hover:bg-slate-100">
+            Sign out
+          </button>
+        </div>
+      </header>
+
       <div className="mx-auto grid max-w-6xl gap-6 p-6 md:grid-cols-[280px_1fr]">
-        {/* Sidebar: upload + documents */}
         <aside className="space-y-4">
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-blue-500">
-            <span className="text-sm font-medium">{uploading ? "Processing PDF..." : "Upload a PDF"}</span>
+            <span className="text-sm font-medium">
+              {uploading ? "Processing PDF..." : "Upload a PDF"}
+            </span>
             <span className="mt-1 text-xs text-slate-500">Max 4 MB</span>
             <input
               ref={fileRef}
@@ -121,7 +204,9 @@ if (!session) {
             <p className="mb-2 px-1 text-xs font-semibold uppercase text-slate-500">Search in</p>
             <button
               onClick={() => setSelected(null)}
-              className={`w-full rounded-lg px-3 py-2 text-left text-sm ${selected === null ? "bg-blue-50 font-medium text-blue-700" : "hover:bg-slate-100"}`}
+              className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
+                selected === null ? "bg-blue-50 font-medium text-blue-700" : "hover:bg-slate-100"
+              }`}
             >
               All documents
             </button>
@@ -129,16 +214,19 @@ if (!session) {
               <button
                 key={d.id}
                 onClick={() => setSelected(d.id)}
-                className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-sm ${selected === d.id ? "bg-blue-50 font-medium text-blue-700" : "hover:bg-slate-100"}`}
+                className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-sm ${
+                  selected === d.id ? "bg-blue-50 font-medium text-blue-700" : "hover:bg-slate-100"
+                }`}
               >
                 <div className="truncate">{d.name}</div>
-                <div className="text-xs text-slate-500">{d.pages} pages · {d.chunks} chunks</div>
+                <div className="text-xs text-slate-500">
+                  {d.pages} pages · {d.chunks} chunks
+                </div>
               </button>
             ))}
           </div>
         </aside>
 
-        {/* Chat */}
         <section className="flex h-[75vh] flex-col rounded-xl bg-white">
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             {messages.length === 0 && (
@@ -149,9 +237,12 @@ if (!session) {
 
             {messages.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${m.role === "user" ? "bg-blue-600 text-white" : "bg-slate-100"}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    m.role === "user" ? "bg-blue-600 text-white" : "bg-slate-100"
+                  }`}
+                >
                   <p className="whitespace-pre-wrap">{m.content}</p>
-
                   {m.sources && m.sources.length > 0 && (
                     <details className="mt-3">
                       <summary className="cursor-pointer text-xs font-medium text-slate-600">
@@ -185,7 +276,7 @@ if (!session) {
               placeholder="Ask a question about your documents..."
               className="flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-blue-500"
             />
-                        <button
+            <button
               disabled={asking || !input.trim()}
               className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
