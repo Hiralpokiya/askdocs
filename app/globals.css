@@ -15,3 +15,23 @@ body {
   background: #f8fafc;
   color: #0f172a;
 }
+
+/* Hand cursor on everything clickable, site-wide */
+@layer base {
+  a,
+  button,
+  summary,
+  label,
+  select,
+  [role="button"],
+  [role="menuitem"],
+  input[type="file"],
+  input[type="submit"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}

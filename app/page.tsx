@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
+import UserMenu from "./user-menu";
 import Image from "next/image";
 
 type Source = { n: number; document: string; page: number; score: string; preview: string };
@@ -217,24 +218,7 @@ export default function Home() {
             Upload a PDF and ask questions. Answers cite their sources.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          {session.user?.image && (
-            <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full" />
-          )}
-          <div className="text-right leading-tight">
-            <div className="font-medium text-slate-800">
-              {session.user?.name ?? (session.user as { username?: string })?.username}
-            </div>
-            {(session.user as { username?: string })?.username && (
-              <div className="text-xs text-slate-500">
-                @{(session.user as { username?: string }).username}
-              </div>
-            )}
-          </div>
-          <button onClick={() => signOut()} className="rounded-lg border px-3 py-1 hover:bg-slate-100">
-            Sign out
-          </button>
-        </div>
+        <UserMenu />
       </header>
 
       <div className="mx-auto grid max-w-6xl gap-6 p-6 md:grid-cols-[280px_1fr]">
