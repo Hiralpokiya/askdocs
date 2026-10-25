@@ -297,11 +297,19 @@ export default function Home() {
                     )}
                   </p>
                   {m.role === "assistant" && !(asking && i === messages.length - 1) && m.sources && m.sources.length > 0 && (() => {
+                    const refused = /couldn['’]t find|could not find|not (in|found in) the (provided )?(documents|sources)/i.test(m.content);
+                    if (refused) {
+                      return (
+                        <span className="mt-3 inline-block rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          Not found in your documents
+                        </span>
+                      );
+                    }
                     const best = Math.max(...m.sources.map((src) => Number(src.score)));
                     const [label, style] =
-                      best >= 0.5
+                      best >= 0.4
                         ? ["High match", "bg-green-100 text-green-700"]
-                        : best >= 0.35
+                        : best >= 0.25
                           ? ["Medium match", "bg-amber-100 text-amber-700"]
                           : ["Low match · answer may be unreliable", "bg-red-100 text-red-700"];
                     return (

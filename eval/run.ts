@@ -42,8 +42,9 @@ async function main() {
     const cited = answerable ? /\[\d+\]/.test(answer) : null;
     const retrievalHit = c.page == null ? null : chunks.some((ch) => ch.page === c.page);
 
-    results.push({ ...c, answerable, answer, correct, cited, retrievalHit, seconds });
-    console.log(`${correct ? "✓" : "✗"} ${i + 1}. ${c.question}`);
+    const bestScore = chunks.length ? Math.max(...chunks.map((ch) => ch.score)) : 0;
+    results.push({ ...c, answerable, answer, correct, cited, retrievalHit, seconds, bestScore });
+    console.log(`${correct ? "✓" : "✗"} ${i + 1}. [score ${results[results.length - 1].bestScore.toFixed(2)}] ${c.question}`);
     if (!correct) console.log(`    got: ${answer.slice(0, 160).replace(/\n/g, " ")}`);
   }
 
@@ -62,6 +63,13 @@ async function main() {
     "Avg latency:        ",
     (results.reduce((s, r) => s + r.seconds, 0) / results.length).toFixed(2) + "s"
   );
+
+  const scores = (rs: typeof results) => rs.map((r) => r.bestScore);
+  const fmt = (xs: number[]) =>
+    xs.length ? `min ${Math.min(...xs).toFixed(2)} · avg ${(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2)} · max ${Math.max(...xs).toFixed(2)}` : "n/a";
+  console.log("\nBest-match scores");
+  console.log("  Answerable questions:  ", fmt(scores(answerables)));
+  console.log("  Unanswerable questions:", fmt(scores(unanswerables)));
 
   fs.writeFileSync("eval/results.json", JSON.stringify(results, null, 2));
   console.log("\nFull results saved to eval/results.json");
