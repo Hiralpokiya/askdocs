@@ -18,7 +18,16 @@ async function main() {
   if (!userId) throw new Error("Set EVAL_USER_ID in .env.local");
 
   const cases: Case[] = JSON.parse(fs.readFileSync("eval/questions.json", "utf8"));
-  const results = [];
+  type Result = Case & {
+    answerable: boolean;
+    answer: string;
+    correct: boolean;
+    cited: boolean | null;
+    retrievalHit: boolean | null;
+    seconds: number;
+    bestScore: number;
+  };
+  const results: Result[] = [];
 
   for (const [i, c] of cases.entries()) {
     const start = Date.now();
