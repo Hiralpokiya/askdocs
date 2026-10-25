@@ -56,6 +56,19 @@ export default function Home() {
     }
   }
 
+  async function deleteDoc(doc: Doc) {
+    if (!confirm(`Delete "${doc.name}"? This can't be undone.`)) return;
+    setError("");
+    const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Delete failed");
+      return;
+    }
+    setDocs((all) => all.filter((x) => x.id !== doc.id));
+    if (selected === doc.id) setSelected(null);
+  }
+
   // Update the last message (the assistant reply being streamed)
   function updateLast(fn: (m: Message) => Message) {
     setMessages((all) => {
@@ -259,18 +272,34 @@ export default function Home() {
               All documents
             </button>
             {docs.map((d) => (
-              <button
+              <div
                 key={d.id}
-                onClick={() => setSelected(d.id)}
-                className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-sm ${
-                  selected === d.id ? "bg-blue-50 font-medium text-blue-700" : "hover:bg-slate-100"
+                className={`group mt-1 flex items-start rounded-lg ${
+                  selected === d.id ? "bg-blue-50" : "hover:bg-slate-100"
                 }`}
               >
-                <div className="truncate">{d.name}</div>
-                <div className="text-xs text-slate-500">
-                  {d.pages} pages · {d.chunks} chunks
-                </div>
-              </button>
+                <button
+                  onClick={() => setSelected(d.id)}
+                  className={`min-w-0 flex-1 px-3 py-2 text-left text-sm ${
+                    selected === d.id ? "font-medium text-blue-700" : ""
+                  }`}
+                >
+                  <div className="truncate">{d.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {d.pages} pages · {d.chunks} chunks
+                  </div>
+                </button>
+                <button
+                  onClick={() => deleteDoc(d)}
+                  aria-label={`Delete ${d.name}`}
+                  title="Delete"
+                  className="m-1 rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 focus:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         </aside>
