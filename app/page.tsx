@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import Image from "next/image";
 
 type Source = { n: number; document: string; page: number; score: string; preview: string };
 type Message = { role: "user" | "assistant"; content: string; sources?: Source[] };
@@ -216,7 +217,19 @@ export default function Home() {
           </p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-slate-600">{session.user?.name}</span>
+          {session.user?.image && (
+            <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full" />
+          )}
+          <div className="text-right leading-tight">
+            <div className="font-medium text-slate-800">
+              {session.user?.name ?? (session.user as { username?: string })?.username}
+            </div>
+            {(session.user as { username?: string })?.username && (
+              <div className="text-xs text-slate-500">
+                @{(session.user as { username?: string }).username}
+              </div>
+            )}
+          </div>
           <button onClick={() => signOut()} className="rounded-lg border px-3 py-1 hover:bg-slate-100">
             Sign out
           </button>
