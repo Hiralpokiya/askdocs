@@ -309,7 +309,7 @@ export default function Home() {
                     const [label, style] =
                       best >= 0.4
                         ? ["High match", "bg-green-100 text-green-700"]
-                        : best >= 0.25
+                        : best >= 0.3
                           ? ["Medium match", "bg-amber-100 text-amber-700"]
                           : ["Low match · answer may be unreliable", "bg-red-100 text-red-700"];
                     return (
