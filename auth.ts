@@ -4,14 +4,15 @@ import GitHub from "next-auth/providers/github";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [GitHub],
   callbacks: {
-    // On sign-in, keep the GitHub username (login) in the token
-    jwt({ token, profile }) {
+    jwt({ token, account, profile }) {
+      // On sign-in, store the stable GitHub account id (never changes)
+      if (account?.providerAccountId) token.uid = account.providerAccountId;
       if (profile) token.username = (profile as { login?: string }).login;
       return token;
     },
-    // Expose the user id and username to the app
     session({ session, token }) {
-      if (token.sub) session.user.id = token.sub;
+      const uid = (token.uid as string | undefined) ?? token.sub;
+      if (uid) session.user.id = uid;
       if (token.username) {
         (session.user as { username?: string }).username = token.username as string;
       }
