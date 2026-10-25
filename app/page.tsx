@@ -120,6 +120,7 @@ export default function Home() {
       <main className="min-h-screen bg-slate-50 text-slate-900">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
           <div>
+            <div className="mb-6 flex items-center gap-2"><Image src="/logo.svg" alt="" width={36} height={36} /><span className="text-xl font-semibold">AskDocs</span></div>
             <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
               RAG · Next.js · pgvector
             </span>
@@ -211,7 +212,7 @@ export default function Home() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center justify-between border-b bg-white px-6 py-4">
         <div>
-          <h1 className="text-xl font-semibold">AskDocs</h1>
+          <div className="flex items-center gap-2"><Image src="/logo.svg" alt="" width={28} height={28} /><h1 className="text-xl font-semibold">AskDocs</h1></div>
           <p className="text-sm text-slate-500">
             Upload a PDF and ask questions. Answers cite their sources.
           </p>
