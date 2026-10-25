@@ -27,6 +27,12 @@ export default function Home() {
     return () => window.removeEventListener("pageshow", reset);
   }, []);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Keep the newest message in view
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messages]);
 
   // Load this user's saved documents after sign-in
   useEffect(() => {
@@ -35,6 +41,14 @@ export default function Home() {
       .then((r) => (r.ok ? r.json() : []))
       .then(setDocs);
   }, [status]);
+
+  // Load saved chat history after sign-in
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/messages", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: Message[]) => setMessages(rows));
+  }, [status, session?.user?.id]);
 
   async function upload(file: File) {
     setError("");
@@ -67,6 +81,13 @@ export default function Home() {
     }
     setDocs((all) => all.filter((x) => x.id !== doc.id));
     if (selected === doc.id) setSelected(null);
+  }
+
+  async function clearHistory() {
+    if (!confirm("Clear your chat history? Your documents will stay.")) return;
+    const res = await fetch("/api/messages", { method: "DELETE" });
+    if (res.ok) setMessages([]);
+    else setError("Could not clear history");
   }
 
   // Update the last message (the assistant reply being streamed)
@@ -171,7 +192,7 @@ export default function Home() {
               Sign in with GitHub to try it
             </button>
             <p className="mt-3 text-xs text-slate-500">
-              We only read your public GitHub profile. Max file size 4 MB.
+              We only read your public GitHub profile. Your documents and chat history are saved to your account, and you can delete them anytime.
             </p>
           </div>
 
@@ -305,6 +326,18 @@ export default function Home() {
         </aside>
 
         <section className="flex h-[75vh] min-w-0 flex-col rounded-xl bg-white">
+          {messages.length > 0 && (
+            <div className="flex items-center justify-between border-b px-5 py-2 text-xs text-slate-500">
+              <span>Chat history is saved to your account</span>
+              <button
+                onClick={clearHistory}
+                disabled={asking}
+                className="rounded-md px-2 py-1 hover:bg-slate-100 hover:text-red-600"
+              >
+                Clear history
+              </button>
+            </div>
+          )}
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             {messages.length === 0 && (
               <p className="mt-20 text-center text-sm text-slate-400">
@@ -372,6 +405,7 @@ export default function Home() {
             ))}
 
             {asking && lastIsUser && <p className="text-sm text-slate-400">Searching your documents...</p>}
+            <div ref={bottomRef} />
           </div>
 
           {error && <p className="border-t bg-red-50 px-5 py-2 text-sm text-red-600">{error}</p>}

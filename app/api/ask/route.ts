@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { consume, limitMessage } from "@/lib/limits";
+import { pool } from "@/lib/db";
 import { getOpenAI } from "@/lib/openai";
 import { retrieve, buildUserMessage, SYSTEM_PROMPT, chatModel } from "@/lib/rag";
 
@@ -8,18 +9,19 @@ export async function POST(req: Request) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Please sign in" }, { status: 401 });
+  const uid: string = userId;
 
   const { question, documentId } = await req.json();
   if (typeof question !== "string" || !question.trim()) {
     return NextResponse.json({ error: "Please ask a question" }, { status: 400 });
   }
 
-  const quota = await consume(userId, "ask");
+  const quota = await consume(uid, "ask");
   if (!quota.ok) {
     return NextResponse.json({ error: limitMessage("ask", quota.limit) }, { status: 429 });
   }
 
-  const chunks = await retrieve(question, userId, documentId ?? null);
+  const chunks = await retrieve(question, uid, documentId ?? null);
 
   const sources = chunks.map((c, i) => ({
     n: i + 1,
@@ -50,14 +52,32 @@ export async function POST(req: Request) {
   const body = new ReadableStream({
     async start(controller) {
       controller.enqueue(encoder.encode(JSON.stringify(sources) + "\n"));
+      let answer = "";
       try {
         for await (const chunk of completion) {
           const text = chunk.choices[0]?.delta?.content;
-          if (text) controller.enqueue(encoder.encode(text));
+          if (text) {
+            answer += text;
+            controller.enqueue(encoder.encode(text));
+          }
         }
       } catch (err) {
         console.error(err);
         controller.enqueue(encoder.encode("\n\n[The answer was cut off. Please try again.]"));
+      }
+
+      // Save the exchange so it's still there next time the user signs in.
+      // A failed save is logged but never breaks the answer.
+      if (answer) {
+        try {
+          await pool.query(
+            `INSERT INTO messages (user_id, role, content, sources)
+             VALUES ($1, 'user', $2, NULL), ($1, 'assistant', $3, $4::jsonb)`,
+            [uid, question.trim(), answer, JSON.stringify(sources)]
+          );
+        } catch (err) {
+          console.error("Failed to save chat history", err);
+        }
       }
       controller.close();
     },
